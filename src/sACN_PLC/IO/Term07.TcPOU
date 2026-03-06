@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="Term07" Id="{73b09ae7-c546-4398-aaac-a7c581d75390}" SpecialFunc="None">
+    <Declaration><![CDATA[//EL6851-0010 Terminal (DMX Slave) programm
+PROGRAM Term07
+VAR_INPUT
+	DMX_Control_SDX16  	AT %I*: ARRAY [1..16] OF USINT;
+END_VAR
+VAR_OUTPUT
+	DmxArrayTo_sAcn_U111 : ARRAY [1..16] OF USINT;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[DmxArrayTo_sAcn_U111[01] := DMX_Control_SDX16[01];
+DmxArrayTo_sAcn_U111[02] := DMX_Control_SDX16[02];
+DmxArrayTo_sAcn_U111[03] := DMX_Control_SDX16[03];
+DmxArrayTo_sAcn_U111[04] := DMX_Control_SDX16[04];
+DmxArrayTo_sAcn_U111[05] := DMX_Control_SDX16[05];
+DmxArrayTo_sAcn_U111[06] := DMX_Control_SDX16[06];
+DmxArrayTo_sAcn_U111[07] := DMX_Control_SDX16[07];
+DmxArrayTo_sAcn_U111[08] := DMX_Control_SDX16[08];
+
+DmxArrayTo_sAcn_U111[09] := DMX_Control_SDX16[09];
+DmxArrayTo_sAcn_U111[10] := DMX_Control_SDX16[10];
+DmxArrayTo_sAcn_U111[11] := DMX_Control_SDX16[11];
+DmxArrayTo_sAcn_U111[12] := DMX_Control_SDX16[12];
+DmxArrayTo_sAcn_U111[13] := DMX_Control_SDX16[13];
+DmxArrayTo_sAcn_U111[14] := DMX_Control_SDX16[14];
+DmxArrayTo_sAcn_U111[15] := DMX_Control_SDX16[15];
+DmxArrayTo_sAcn_U111[16] := DMX_Control_SDX16[16];]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

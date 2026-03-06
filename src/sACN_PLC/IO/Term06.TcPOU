@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="Term06" Id="{f8435ac9-8889-467f-81e9-fca3008185a2}" SpecialFunc="None">
+    <Declaration><![CDATA[//EL6851 Terminal (DMX Master) programm
+PROGRAM Term06 
+VAR_INPUT
+	DmxLightFixture_Left  : ARRAY [1..8] OF USINT;
+	DmxLightFixture_Right : ARRAY [1..8] OF USINT;
+END_VAR
+VAR_OUTPUT
+	ChannelsLength	AT %Q*: UINT := 16;
+	DmxChannels		AT %Q*: ARRAY [1..16] OF USINT; 
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[DmxChannels  [1] := DmxLightFixture_Left [1];
+DmxChannels  [2] := DmxLightFixture_Left [2];
+DmxChannels  [3] := DmxLightFixture_Left [3];
+DmxChannels  [4] := DmxLightFixture_Left [4];
+                    
+DmxChannels  [5] := DmxLightFixture_Left [5];
+DmxChannels  [6] := DmxLightFixture_Left [6];
+DmxChannels  [7] := DmxLightFixture_Left [7];
+DmxChannels  [8] := DmxLightFixture_Left [8];
+
+DmxChannels  [9] := DmxLightFixture_Right [1];
+DmxChannels [10] := DmxLightFixture_Right [2];
+DmxChannels [11] := DmxLightFixture_Right [3];
+DmxChannels [12] := DmxLightFixture_Right [4];
+                                                          
+DmxChannels [13] := DmxLightFixture_Right [5];
+DmxChannels [14] := DmxLightFixture_Right [6];
+DmxChannels [15] := DmxLightFixture_Right [7];
+DmxChannels [16] := DmxLightFixture_Right [8];]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

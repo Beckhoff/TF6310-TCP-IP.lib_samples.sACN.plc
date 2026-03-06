@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="IO" Id="{a0340162-3608-4e28-bda3-2d06c9afbd18}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM IO
+VAR
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[Term06();
+
+Term07();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

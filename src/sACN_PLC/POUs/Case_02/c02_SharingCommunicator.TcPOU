@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="c02_SharingCommunicator" Id="{005fdec2-2590-4697-851e-6fc42eb89fbd}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM c02_SharingCommunicator
+VAR
+	sACN_Com : FB_sACN_UDP_Communicator;
+	
+	ChangeValuesTimer : TON;
+	i : UINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[sACN_Com(NetworkAdapterNum:= E_NetworkAdapters.SLOT_N02, //<- Change if it is necessary
+			 ReconnectTime:= T#5M, 
+			 BindedToNetworkAdapter=> , 
+			 BindedAdapterInfo=> );
+			 
+PRG_SimpleReceiving(
+	sACN_ExternalCommunicator:= sACN_Com, 
+	Enable:= , 
+	isInited=> , 
+	OutDmxData_U222=> , 
+	OutDmxData_U444=> );
+	
+FOR i:=1 TO 16 DO
+	PRG_SimpleSending.InDmxData_U111[i] := PRG_SimpleSending.InDmxData_U111[i] + 1;
+	PRG_SimpleSending.InDmxData_U333[i] := PRG_SimpleSending.InDmxData_U333[i] - 1;
+END_FOR
+
+PRG_SimpleSending(
+	Enable:= , 
+	sACN_ExternalCommunicator:= sACN_Com, 
+	InDmxData_U111:= , 
+	InDmxData_U333:= , 
+	isInited=> );]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

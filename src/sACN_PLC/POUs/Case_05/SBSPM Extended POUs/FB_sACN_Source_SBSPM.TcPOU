@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_sACN_Source_SBSPM" Id="{e7e33292-ce7d-472e-a17f-02b315804576}" SpecialFunc="None">
+    <Declaration><![CDATA[//Slot-By-Slot Priority Mode
+//A variation of this uses DMX512-A START Code DDh (see [DMX] and http://tsp.esta.org/tsp/working_groups/CP/DMXAlternateCodes.php) 
+//to indicate slot-by-slot priority before merging the highest priority data for each slot on an HTP basis.
+FUNCTION_BLOCK FB_sACN_Source_SBSPM EXTENDS FB_sACN_Source
+VAR_INPUT
+	DmxPrioriries : ARRAY [1..512] OF USINT;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();]]></ST>
+    </Implementation>
+    <Method Name="WriteDataPacket" Id="{c6f64744-fe29-448c-985b-7726b64c7fee}">
+      <Declaration><![CDATA[METHOD WriteDataPacket : BOOL
+VAR_IN_OUT
+	packet	: Tc3_sACN.U_sACN_Packet;
+END_VAR
+VAR_STAT
+	wtPriorPacket : BOOL;// is current packet a packet with priorities&
+	i : DINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.WriteDataPacket(packet:=packet);
+
+IF wtPriorPacket THEN
+	packet.AsDataPacket.DL07_PropertyValues[1] := 16#DD;
+	FOR i := 1 TO 512 DO
+		packet.AsDataPacket.DL07_PropertyValues[i+1] := DmxPrioriries[i];
+	END_FOR
+END_IF
+
+wtPriorPacket := NOT wtPriorPacket;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

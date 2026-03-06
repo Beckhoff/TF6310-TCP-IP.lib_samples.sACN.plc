@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="PRG_SimpleReceiving" Id="{214a2e2b-ef98-4924-9245-950617199840}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM PRG_SimpleReceiving
+VAR_INPUT
+	sACN_ExternalCommunicator : Tc3_sACN.I_sAcnCommunicator;
+	Enable : BOOL; //Boolean input to enable the receivers
+END_VAR
+VAR_OUTPUT
+	isInited 		: BOOL; //Indicates if the initialization is complete.
+	OutDmxData_U222 : ARRAY [1..16] OF USINT; //Array to store the DMX data for universes 222
+	OutDmxData_U444 : ARRAY [1..16] OF USINT; //Array to store the DMX data for universes 444
+END_VAR
+VAR
+	sACN_Receiver_U222:	Tc3_sACN.FB_sACN_Receiver;
+	sACN_Receiver_U444:	Tc3_sACN.FB_sACN_ReceiverAndMerger;
+	
+	LastReceivedPacketNum : UINT;
+	i : UINT;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF sACN_ExternalCommunicator <> 0 THEN
+//Packet Extraction Approach: Extract DMX data upon receiving a new packet.
+	sACN_Receiver_U222(
+		sAcnCommunicator:= sACN_ExternalCommunicator, 
+		Enable			:= Enable,
+		sAcnUniverse	:= 222);
+	
+	IF sACN_Receiver_U222.ReceiveCounter <> LastReceivedPacketNum THEN // A new sACN packet has been received.
+		LastReceivedPacketNum := sACN_Receiver_U222.ReceiveCounter;
+		
+		// Check if the received packet is a data packet.
+		IF  sACN_Receiver_U222.ReceivedPacket.AsDataPacket.FL02_VectorFraming = Tc3_sACN.sACN_Params.VECTOR_E131_DATA_PACKET THEN
+			// Extract and store DMX data from the received packet.
+			FOR i:=1 TO 16 DO
+				OutDmxData_U222[i] := sACN_Receiver_U222.ReceivedPacket.AsDataPacket.DL07_PropertyValues[i+1];
+			END_FOR
+		END_IF
+	END_IF
+	
+// Direct Binding Approach: Bind the external DMX data array for universe 444 to allow direct manipulation of the received values.
+	IF NOT isInited THEN
+		// Bind the external DMX data array for universe 444 to allow direct manipulation of the received values.
+		sACN_Receiver_U444.BindExternalDmxArray(OutDmxData_U444);
+		isInited := TRUE;
+	END_IF	 
+	
+	sACN_Receiver_U444(
+		sAcnCommunicator:= sACN_ExternalCommunicator, 
+		Enable			:= Enable, 
+		sAcnUniverse	:= 444, 
+		MergeRule		:= E_DmxMergeRules.HVP);
+END_IF
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

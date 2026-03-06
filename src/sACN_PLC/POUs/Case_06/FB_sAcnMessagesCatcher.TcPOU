@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_sAcnMessagesCatcher" Id="{16ea2e65-8b01-4322-a8a3-a1fbcb224ae1}" SpecialFunc="None">
+    <Declaration><![CDATA[//When you need to react to events in code, you can catch them directly in your application 
+//by inheriting from FB_sAcnLibEventsCatcher. This base component already implements the event 
+//subscription and dispatch logic, so the approach is context‑independent and requires no additional configuration.
+FUNCTION_BLOCK FB_sAcnMessagesCatcher EXTENDS FB_sAcnLibEventsCatcher
+VAR_INPUT
+	sAcnReceiverUniverse 		: UINT;// Target sACN universe number to monitor. Events are filtered for this universe
+END_VAR
+VAR_OUTPUT
+	RecieverEnabledEventsCount 	: UINT;// Count of OnSACN_Receiver_Enabled events observed for the selected universe
+	RecieverDisabledEventsCount : UINT;// Count of OnSACN_Receiver_Disabled events observed for the selected universe
+END_VAR
+VAR
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// Call the parent implementation to keep default logging/event binding from FB_sAcnLibEventsCatcher
+SUPER^();SUPER^(); ]]></ST>
+    </Implementation>
+    <Method Name="OnSACN_Receiver_Disabled" Id="{1fd34d46-4d60-46f1-8f51-bd956ecb5019}">
+      <Declaration><![CDATA[//JSON ATTRIBUTE : {sAcnUniverse : [UINT]}
+METHOD OnSACN_Receiver_Disabled : BOOL
+VAR_INPUT
+    fbEvent : REFERENCE TO FB_TcEvent;
+END_VAR
+VAR
+	sAcnUniverse : UINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Each event handler method can include attributes that carry extra information about the event.
+// The available attributes are documented in the method’s comment header as a JSON descriptor 
+// (for example, //JSON ATTRIBUTE : {sAcnUniverse : [UINT]}). To read these values at runtime, 
+// use ParseJsonAttributeFromEvent, which extracts an attribute by name from the FB_TcEvent into your variable. 
+// The example shown retrieves the sAcnUniverse attribute and then uses it to filter and count the relevant events.
+
+THIS^.ParseJsonAttributeFromEvent(fbEvent, 'sAcnUniverse', sAcnUniverse);
+
+IF sAcnUniverse = sAcnReceiverUniverse THEN
+	RecieverDisabledEventsCount := RecieverDisabledEventsCount + 1;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="OnSACN_Receiver_Enabled" Id="{4e720a4c-efd9-4fdf-a744-63d96eab3bd5}">
+      <Declaration><![CDATA[//JSON ATTRIBUTE : {sAcnUniverse : [UINT]}
+METHOD OnSACN_Receiver_Enabled : BOOL
+VAR_INPUT
+    fbEvent : REFERENCE TO FB_TcEvent;
+END_VAR
+VAR
+	sAcnUniverse : UINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Each event handler method can include attributes that carry extra information about the event.
+// The available attributes are documented in the method’s comment header as a JSON descriptor 
+// (for example, //JSON ATTRIBUTE : {sAcnUniverse : [UINT]}). To read these values at runtime, 
+// use ParseJsonAttributeFromEvent, which extracts an attribute by name from the FB_TcEvent into your variable. 
+// The example shown retrieves the sAcnUniverse attribute and then uses it to filter and count the relevant events.
+
+THIS^.ParseJsonAttributeFromEvent(fbEvent, 'sAcnUniverse', sAcnUniverse);
+
+IF sAcnUniverse = sAcnReceiverUniverse THEN
+	RecieverEnabledEventsCount := RecieverEnabledEventsCount + 1;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_sAcnMessagesCatcher">
+      <LineId Id="30" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_sAcnMessagesCatcher.OnSACN_Receiver_Disabled">
+      <LineId Id="22" Count="3" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="10" Count="3" />
+      <LineId Id="6" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_sAcnMessagesCatcher.OnSACN_Receiver_Enabled">
+      <LineId Id="21" Count="5" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="12" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

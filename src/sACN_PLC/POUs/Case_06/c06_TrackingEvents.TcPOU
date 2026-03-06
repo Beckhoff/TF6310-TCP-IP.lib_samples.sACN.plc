@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="c06_TrackingEvents" Id="{573024a2-a9e5-448d-9a4f-bf04fb55f921}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM c06_TrackingEvents
+VAR
+	sAcnLibEventsHandler  : FB_sAcnMessagesCatcher;// Extended instance of the event catcher. 
+	// Monitors sACN receiver events and counts Enabled/Disabled transitions for the configured universe
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// In the example, the application monitors the OnSACN_Receiver_Disabled and OnSACN_Receiver_Enabled events. 
+// FB_sAcnMessagesCatcher override the methods provided by FB_sAcnLibEventsCatcher and implement the actions your application should take. 
+// The base class defines these methods and wires the events for you.
+// your overrides add the custom behavior while the catcher handles the rest.
+
+sAcnLibEventsHandler(sAcnReceiverUniverse		:= 222, 
+					RecieverEnabledEventsCount	=> , 
+					RecieverDisabledEventsCount	=> );]]></ST>
+    </Implementation>
+    <LineIds Name="c06_TrackingEvents">
+      <LineId Id="124" Count="0" />
+      <LineId Id="127" Count="0" />
+      <LineId Id="125" Count="1" />
+      <LineId Id="128" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="116" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="c4_MultiuniverseSource" Id="{d7f1f4dd-0fdd-4e53-980a-25432f71629e}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM c4_MultiuniverseSource
+VAR_INPUT
+	Enable : BOOL;
+	SourceName: STRING(63);
+	CID: GUID; 
+	
+	InDmxData_U111 : ARRAY [1..64] OF USINT; //Arrays containing the DMX data to be sent to universe 111
+	InDmxData_U222 : ARRAY [1..128] OF USINT; //Arrays containing the DMX data to be sent to universe 333
+	InDmxData_U333 : ARRAY [1..256] OF USINT; //Arrays containing the DMX data to be sent to universe 111
+	InDmxData_U444 : ARRAY [1..512] OF USINT; //Arrays containing the DMX data to be sent to universe 333
+END_VAR
+VAR_OUTPUT
+	isInited : BOOL;
+END_VAR
+VAR
+	sACN_Com : FB_sACN_UDP_Communicator;
+	
+	sACN_Sender_U111: FB_sACN_Source;
+	sACN_Sender_U222: FB_sACN_SourceExtDmx;
+	sACN_Sender_U333: FB_sACN_Source;
+	sACN_Sender_U444: FB_sACN_SourceExtDmx;
+	
+	i : UINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF NOT isInited THEN
+	// Bind the external DMX data array for universe 444 to allow direct manipulation of the received values.
+	sACN_Sender_U222.BindExternalDmxArray(InDmxData_U222);
+	sACN_Sender_U444.BindExternalDmxArray(InDmxData_U444);
+	isInited := TRUE;
+END_IF
+
+sACN_Com(NetworkAdapterNum:= E_NetworkAdapters.SLOT_N02, //<- Change if it is necessary
+			 ReconnectTime:= T#5M, 
+			 BindedToNetworkAdapter=> , 
+			 BindedAdapterInfo=> );	
+
+sACN_Sender_U111(
+	sAcnCommunicator:= sACN_Com, 
+	Enable:= Enable, 
+	SourceName:= SourceName, 
+	CID:= CID, 
+	sAcnUniverse:= 111, 
+	PacketPriority:= , 
+	SendingPeriod:= , 
+	DmxChannels:= , 
+	SentPackets=> );
+
+FOR i:=1 TO 64 DO
+	sACN_Sender_U111.DmxChannels[i] := InDmxData_U111[i];
+END_FOR
+	
+sACN_Sender_U222(
+	sAcnCommunicator:= sACN_Com, 
+	Enable:= Enable, 
+	SourceName:= SourceName, 
+	CID:= CID, 
+	sAcnUniverse:= 222, 
+	PacketPriority:= , 
+	SendingPeriod:= , 
+	SentPackets=> );
+	
+sACN_Sender_U333(
+	sAcnCommunicator:= sACN_Com, 
+	Enable:= Enable, 
+	SourceName:= SourceName, 
+	CID:= CID, 
+	sAcnUniverse:= 333, 
+	PacketPriority:= , 
+	SendingPeriod:= , 
+	DmxChannels:= , 
+	SentPackets=> );
+	
+FOR i:=1 TO 256 DO
+	sACN_Sender_U333.DmxChannels[i] := InDmxData_U333[i];
+END_FOR
+	
+sACN_Sender_U444(
+	sAcnCommunicator:= sACN_Com, 
+	Enable:= Enable, 
+	SourceName:= SourceName, 
+	CID:= CID, 
+	sAcnUniverse:= 444, 
+	PacketPriority:= , 
+	SendingPeriod:= , 
+	SentPackets=> );]]></ST>
+    </Implementation>
+    <LineIds Name="c4_MultiuniverseSource">
+      <LineId Id="3" Count="5" />
+      <LineId Id="83" Count="3" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="9" Count="48" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

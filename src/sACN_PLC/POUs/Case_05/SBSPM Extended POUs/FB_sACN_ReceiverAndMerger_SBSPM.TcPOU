@@ -1,0 +1,215 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_sACN_ReceiverAndMerger_SBSPM" Id="{cdb9f1d3-d0b6-470d-af08-23b09e3f09fc}" SpecialFunc="None">
+    <Declaration><![CDATA[{attribute 'hide_all_locals'}
+FUNCTION_BLOCK FB_sACN_ReceiverAndMerger_SBSPM EXTENDS FB_sACN_Receiver
+VAR_INPUT
+	MergeRule		: E_DmxMergeRules := E_DmxMergeRules.LVP;//Rule for merging DMX values from multiple sources. Default is set to LVP (Latest Value Priority).
+END_VAR
+VAR_OUTPUT
+	ActiveSources 	: ARRAY [1..sACN_Params.MAX_RECEIVED_SOURCES] OF ST_ReceivedSourceSBSPM;//Array holding information about active sources currently being received.
+END_VAR
+VAR
+
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+CheckExeededActiveSources();]]></ST>
+    </Implementation>
+    <Folder Name="I_sACN_Receiver" Id="{d454527f-2044-4145-8ee5-351976288b03}" />
+    <Folder Name="ReceivedSources" Id="{e0c88cd2-a860-47d3-89bf-d01c386aff6c}">
+      <Folder Name="UtilMethods" Id="{3cbdabd7-0c7c-4c19-a9b8-7a1d9c3ff500}" />
+    </Folder>
+    <Method Name="CheckExeededActiveSources" Id="{1d542476-e31a-400d-8e2d-d592d15cbb24}" FolderPath="ReceivedSources\">
+      <Declaration><![CDATA[//Iterates through active sources and checks for timeouts. 
+//If a timeout occurs, it logs the event and removes the source from the list.
+METHOD PROTECTED CheckExeededActiveSources : BOOL
+VAR
+	i : UINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[FOR i:=1 TO sACN_Params.MAX_RECEIVED_SOURCES DO
+	IF ActiveSources[i].Name <> '' THEN
+		ActiveSources[i].timeout(IN := TRUE, PT := sACN_Params.SACN_RECEIVER_TIMEOUT);
+		IF ActiveSources[i].timeout.Q THEN
+			_logger.Log_sACN_Receiver_DeleteSource(sAcnUniverse, ActiveSources[i].Name, ActiveSources[i].timeout.PT);		
+			ForgetSource(i);
+		END_IF
+	END_IF
+END_FOR]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ForgetSource" Id="{aa4c71cd-a5f8-4fc7-b2c9-11be30d4129d}" FolderPath="ReceivedSources\UtilMethods\">
+      <Declaration><![CDATA[//Removes a source from the active sources list by shifting the remaining sources up in the array. 
+//If all sources are gone, it calls OnAllActiveSourcesAreGone
+METHOD PROTECTED ForgetSource : BOOL
+VAR_INPUT
+	SourceNum: UINT; //
+END_VAR
+VAR
+	i : UINT;
+	emptySource : ST_ReceivedSourceSBSPM;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF SourceNum > 0 AND SourceNum <= sACN_Params.MAX_RECEIVED_SOURCES THEN
+	FOR i:=SourceNum TO sACN_Params.MAX_RECEIVED_SOURCES DO
+		IF i <> sACN_Params.MAX_RECEIVED_SOURCES THEN
+			ActiveSources[i] := ActiveSources[i+1];
+		ELSE
+			ActiveSources[i] := emptySource;
+		END_IF
+	END_FOR
+END_IF
+
+FOR i:=1 TO sACN_Params.MAX_RECEIVED_SOURCES DO
+	IF ActiveSources[i].Name <> '' THEN
+		RETURN;
+	END_IF
+END_FOR
+
+OnAllActiveSourcesAreGone();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="GetReceivedSourceNumber" Id="{c18736f3-d653-4b8e-bf71-e7179f506839}" FolderPath="ReceivedSources\UtilMethods\">
+      <Declaration><![CDATA[//Checks if a source is known and updates its priority and sequence number, logging any sequence errors
+METHOD PROTECTED GetReceivedSourceNumber : UINT
+VAR_IN_OUT
+	Source: ST_ReceivedSourceSBSPM;
+END_VAR
+VAR
+	i : UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[FOR i:=1 TO sACN_Params.MAX_RECEIVED_SOURCES DO
+	IF Tc3_Module.GuidsEqual(ADR(ActiveSources[i].CID), ADR(Source.CID)) THEN
+		ActiveSources[i].Priority := Source.Priority;
+		
+		IF (Source.LastFrameNum - ActiveSources[i].LastFrameNum) > 1 AND_THEN
+		  (Source.LastFrameNum <> 1 AND ActiveSources[i].LastFrameNum <> 255) THEN
+			ActiveSources[i].SeqErr := ActiveSources[i].SeqErr + 1;
+			ActiveSources[i].Jumps := Source.LastFrameNum - ActiveSources[i].LastFrameNum;
+		END_IF
+		
+		ActiveSources[i].LastFrameNum := Source.LastFrameNum;
+		
+		ActiveSources[i].timeout(IN := FALSE);
+		
+		GetReceivedSourceNumber := i;
+		RETURN;
+	END_IF
+END_FOR]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MergeToExternalDmxArray" Id="{0881512f-3554-4f12-a47b-e96e8254b547}" FolderPath="ReceivedSources\UtilMethods\">
+      <Declaration><![CDATA[METHOD PROTECTED MergeToExternalDmxArray : BOOL
+VAR_INPUT
+END_VAR
+VAR_STAT
+	i, j 			: DINT;
+	temp_val: USINT;
+	temp_num :DINT ;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF _extNum > 0 AND _extNum <= 512 THEN
+	FOR i:= 1 TO _extNum DO
+		temp_val := 0;
+		temp_num := 1;
+		FOR j:=1 TO sACN_Params.MAX_RECEIVED_SOURCES DO
+			IF ActiveSources[j].LastPriorities[i] > temp_val THEN
+				temp_val := ActiveSources[j].LastPriorities[i];
+				temp_num := j;
+			END_IF
+		_externalDmxArray[i]^ := ActiveSources[temp_num].LastDMXproperties[i];
+		END_FOR
+	END_FOR
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="OnAllActiveSourcesAreGone" Id="{87c8c7cd-ed3e-4241-9deb-d4edaadebb8d}" FolderPath="ReceivedSources\UtilMethods\">
+      <Declaration><![CDATA[//Clears the received packet and resets the external DMX array when no active sources are left.
+METHOD PROTECTED OnAllActiveSourcesAreGone : BOOL
+VAR
+	i : DINT;
+	emptyDataPacket : ST_SACN_DataPacket;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[ReceivedPacket.AsDataPacket := emptyDataPacket;
+
+IF _extNum > 0 AND _extNum <= 512 THEN
+	FOR i:= 1 TO _extNum DO
+		_externalDmxArray[i]^:= 0;
+	END_FOR
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="OnSAcnDataPacketReceived" Id="{a69ef970-84cf-4585-a01d-a827523bd140}" FolderPath="I_sACN_Receiver\">
+      <Declaration><![CDATA[METHOD OnSAcnDataPacketReceived : BOOL
+VAR_IN_OUT
+	Packet 			: ST_SACN_DataPacket;
+END_VAR
+VAR_INPUT
+	sRemoteHost : T_IPv4Addr ;
+END_VAR
+VAR
+	i, j 			: DINT;
+	SenderNum		: DINT;
+	temp_val: USINT;
+	temp_num :DINT ;
+	gotSamePriority : USINT;
+	currentSource	: ST_ReceivedSourceSBSPM;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.OnSAcnDataPacketReceived(Packet, sRemoteHost);
+
+currentSource.Name 			:= Packet.FL03_SourceName.AsString;
+currentSource.Priority  	:= Packet.FL04_Priority;
+currentSource.CID 			:= Packet.RL06_CID;
+currentSource.IpAddress 	:= sRemoteHost;
+currentSource.LastFrameNum 	:= Packet.FL06_SequenceNumber;
+
+SenderNum := GetReceivedSourceNumber(currentSource);
+
+IF SenderNum = 0 THEN //if known update data inside method _isReceivedSourceKnown
+	SenderNum := SaveSource(currentSource);	
+END_IF
+
+IF Packet.DL07_PropertyValues[1] = 16#00 THEN
+	FOR i := 1 TO 512 DO//Update DMX Array in ActiveSource
+		ActiveSources[SenderNum].LastDMXproperties[i] := Packet.DL07_PropertyValues[i+1];
+	END_FOR
+ELSIF Packet.DL07_PropertyValues[1] = 16#DD THEN
+	FOR i := 1 TO 512 DO//Update Priority Array in ActiveSource
+		ActiveSources[SenderNum].LastPriorities[i] := Packet.DL07_PropertyValues[i+1];
+	END_FOR
+END_IF
+
+MergeToExternalDmxArray();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SaveSource" Id="{185a54f1-2bde-44f7-8a27-f6230b55b935}" FolderPath="ReceivedSources\UtilMethods\">
+      <Declaration><![CDATA[//Saves a new source to the list of active sources if there is an empty slot available. Logs the event upon saving
+//Returns the number of stored element in ActiveSources array.
+METHOD PRIVATE SaveSource : UINT
+VAR_IN_OUT
+	Source: ST_ReceivedSourceSBSPM;
+END_VAR
+VAR
+	i : UINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[FOR i:=1 TO sACN_Params.MAX_RECEIVED_SOURCES DO
+	IF ActiveSources[i].Name = '' THEN
+		_logger.Log_sACN_Receiver_SaveSource(sAcnUniverse, Source.Name);
+
+		ActiveSources[i] := Source;
+		SaveSource := i;
+		RETURN;
+	END_IF
+END_FOR]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>
