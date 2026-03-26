@@ -3,7 +3,7 @@
   <POU Name="c01_SimpleUsecase" Id="{5b9b4710-1bde-4c69-a1af-5df33d961e28}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM c01_SimpleUsecase
 VAR_INPUT
-	Enable : BOOL; //Boolean input to enable the receivers
+	Enable 		   : BOOL; //Boolean input to enable the receivers
 	InDmxData_U111 : ARRAY [1..16] OF USINT; //Arrays containing the DMX data to be sent to universe 111
 	InDmxData_U333 : ARRAY [1..16] OF USINT; //Arrays containing the DMX data to be sent to universe 333
 END_VAR
@@ -27,6 +27,7 @@ END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[sACN_Com(NetworkAdapterNum:= E_NetworkAdapters.SLOT_N02, //<- Change NIC here if it is necessary
 			 ReconnectTime:= T#5M, 
+			 sACN_PORT:= ,
 			 BindedToNetworkAdapter=> , 
 			 BindedAdapterInfo=> );
 
@@ -89,7 +90,9 @@ sACN_Receiver_U444(
 	MergeRule		:= E_DmxMergeRules.HVP);]]></ST>
     </Implementation>
     <LineIds Name="c01_SimpleUsecase">
-      <LineId Id="3" Count="45" />
+      <LineId Id="3" Count="0" />
+      <LineId Id="120" Count="1" />
+      <LineId Id="5" Count="43" />
       <LineId Id="87" Count="8" />
       <LineId Id="86" Count="0" />
       <LineId Id="49" Count="5" />
